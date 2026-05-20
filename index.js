@@ -88,6 +88,13 @@ async function run() {
       res.json(result);
     });
 
+    app.get("/facilities/my", verifyToken, async (req, res) => {
+      const result = await facilityCollection
+        .find({ added_by: req.user.email })
+        .toArray();
+      res.json(result);
+    });
+
     app.get("/facilities", async (req, res) => {
       const { search, types } = req.query;
       const query = {};
