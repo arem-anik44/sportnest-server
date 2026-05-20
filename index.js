@@ -71,6 +71,27 @@ async function run() {
       res.json(result);
     });
 
+    app.get("/bookings", async (req, res) => {
+      const { email } = req.query;
+      const result = await bookingCollection.find({ user_email: email }).toArray();
+      res.json(result);
+    });
+
+    app.post("/bookings", async (req, res) => {
+      const bookingData = req.body;
+      console.log(bookingData);
+      const result = await bookingCollection.insertOne(bookingData);
+      res.json(result);
+    });
+
+    app.delete("/bookings/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await bookingCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.json(result);
+    });
+
   } finally {
   }
 }
