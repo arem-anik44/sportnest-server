@@ -1,7 +1,7 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 dotenv.config();
 
 const app = express();
@@ -22,15 +22,56 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // await client.connect();
-
     const db = client.db("sportnest");
     const facilityCollection = db.collection("facilities");
     const bookingCollection = db.collection("bookings");
 
     console.log("Connected to MongoDB!");
+
+    app.get("/facilities/featured", async (req, res) => {
+      const result = await facilityCollection.find().limit(6).toArray();
+      res.json(result);
+    });
+
+    app.get("/facilities", async (req, res) => {
+      const result = await facilityCollection.find().toArray();
+      res.json(result);
+    });
+
+    app.get("/facilities/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await facilityCollection.findOne({
+        _id: new ObjectId(id),
+      });
+      res.json(result);
+    });
+
+    app.post("/facilities", async (req, res) => {
+      const facilityData = req.body;
+      console.log(facilityData);
+      const result = await facilityCollection.insertOne(facilityData);
+      res.json(result);
+    });
+
+    app.patch("/facilities/:id", async (req, res) => {
+      const { id } = req.params;
+      const updatedData = req.body;
+      const result = await facilityCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: updatedData }
+      );
+      res.json(result);
+    });
+
+    app.delete("/facilities/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await facilityCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.json(result);
+    });
+
   } finally {
-    // await client.close();
   }
 }
 run().catch(console.dir);
