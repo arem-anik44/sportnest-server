@@ -1,6 +1,8 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 dotenv.config();
@@ -8,8 +10,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
 
 const uri = process.env.MONGODB_URI;
 
@@ -40,6 +43,20 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
+const verifyCookie = (req, res, next) => {
+  const token = req.cookies?.sportnest_token;
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: "Invalid or expired token" });
+  }
+};
+
 async function run() {
   try {
     const db = client.db("sportnest");
@@ -47,6 +64,24 @@ async function run() {
     const bookingCollection = db.collection("bookings");
 
     console.log("Connected to MongoDB!");
+
+    app.post("/auth/token", (req, res) => {
+      const { email, name } = req.body;
+      if (!email) return res.status(400).json({ message: "Email required" });
+      const token = jwt.sign({ email, name }, process.env.JWT_SECRET, { expiresIn: "7d" });
+      res.cookie("sportnest_token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+      res.json({ success: true });
+    });
+
+    app.post("/auth/logout", (req, res) => {
+      res.clearCookie("sportnest_token");
+      res.json({ success: true });
+    });
 
     app.get("/facilities/featured", async (req, res) => {
       const result = await facilityCollection.find().limit(6).toArray();
