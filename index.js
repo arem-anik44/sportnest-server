@@ -119,12 +119,18 @@ async function run() {
 
     app.post("/facilities", verifyToken, async (req, res) => {
       const facilityData = req.body;
+      facilityData.added_by = req.user.email;
       const result = await facilityCollection.insertOne(facilityData);
       res.json(result);
     });
 
     app.patch("/facilities/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
+      const facility = await facilityCollection.findOne({ _id: new ObjectId(id) });
+      if (!facility) return res.status(404).json({ message: "Facility not found" });
+      if (facility.added_by !== req.user.email) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       const updatedData = req.body;
       const result = await facilityCollection.updateOne(
         { _id: new ObjectId(id) },
@@ -135,9 +141,12 @@ async function run() {
 
     app.delete("/facilities/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
-      const result = await facilityCollection.deleteOne({
-        _id: new ObjectId(id),
-      });
+      const facility = await facilityCollection.findOne({ _id: new ObjectId(id) });
+      if (!facility) return res.status(404).json({ message: "Facility not found" });
+      if (facility.added_by !== req.user.email) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      const result = await facilityCollection.deleteOne({ _id: new ObjectId(id) });
       res.json(result);
     });
 
