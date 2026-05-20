@@ -54,7 +54,16 @@ async function run() {
     });
 
     app.get("/facilities", async (req, res) => {
-      const result = await facilityCollection.find().toArray();
+      const { search, types } = req.query;
+      const query = {};
+      if (search) {
+        query.name = { $regex: search, $options: "i" };
+      }
+      if (types) {
+        const typeArray = types.split(",").map((t) => t.trim());
+        query.type = { $in: typeArray };
+      }
+      const result = await facilityCollection.find(query).toArray();
       res.json(result);
     });
 
