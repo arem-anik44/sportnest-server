@@ -151,22 +151,27 @@ async function run() {
     });
 
     app.get("/bookings", verifyToken, async (req, res) => {
-      const { email } = req.query;
-      const result = await bookingCollection.find({ user_email: email }).toArray();
+      const result = await bookingCollection
+        .find({ user_email: req.user.email })
+        .toArray();
       res.json(result);
     });
 
     app.post("/bookings", verifyToken, async (req, res) => {
       const bookingData = req.body;
+      bookingData.user_email = req.user.email;
       const result = await bookingCollection.insertOne(bookingData);
       res.json(result);
     });
 
     app.delete("/bookings/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
-      const result = await bookingCollection.deleteOne({
-        _id: new ObjectId(id),
-      });
+      const booking = await bookingCollection.findOne({ _id: new ObjectId(id) });
+      if (!booking) return res.status(404).json({ message: "Booking not found" });
+      if (booking.user_email !== req.user.email) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      const result = await bookingCollection.deleteOne({ _id: new ObjectId(id) });
       res.json(result);
     });
 
