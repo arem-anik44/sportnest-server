@@ -63,8 +63,6 @@ async function run() {
     const facilityCollection = db.collection("facilities");
     const bookingCollection = db.collection("bookings");
 
-    console.log("Connected to MongoDB!");
-
     app.post("/auth/token", (req, res) => {
       const { email, name } = req.body;
       if (!email) return res.status(400).json({ message: "Email required" });
@@ -182,15 +180,6 @@ run().catch(console.dir);
 
 app.get("/", (req, res) => {
   res.send("SportNest server is running!");
-});
-
-app.use((req, res) => {
-  res.status(404).json({ message: "Route not found" });
-});
-
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: "Internal server error" });
 });
 
 app.listen(PORT, () => {
